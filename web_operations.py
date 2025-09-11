@@ -97,7 +97,7 @@ def reddit_search_api(keyword, date="All time", sort_by="Hot", num_of_posts=75):
     if not raw_data:
         return None
 
-    parsed_data = []
+    parsed_data = [] 
     for post in raw_data:
         parsed_post = {
             "title": post.get("title"),

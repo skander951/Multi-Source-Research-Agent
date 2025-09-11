@@ -160,9 +160,7 @@ def get_reddit_url_analysis_messages(
     )
 
 
-def get_google_analysis_messages(
-    user_question: str, google_results: str
-) -> list[Dict[str, Any]]:
+def get_google_analysis_messages(user_question: str, google_results: str) -> list[Dict[str, Any]]:
     """Get messages for Google results analysis."""
     return create_message_pair(
         PromptTemplates.google_analysis_system(),
@@ -170,9 +168,7 @@ def get_google_analysis_messages(
     )
 
 
-def get_bing_analysis_messages(
-    user_question: str, bing_results: str
-) -> list[Dict[str, Any]]:
+def get_bing_analysis_messages(user_question: str, bing_results: str) -> list[Dict[str, Any]]:
     """Get messages for Bing results analysis."""
     return create_message_pair(
         PromptTemplates.bing_analysis_system(),
