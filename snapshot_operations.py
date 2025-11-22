@@ -6,19 +6,14 @@ from typing import List, Dict, Any, Optional
 
 load_dotenv()
 
-
-def poll_snapshot_status(
-    snapshot_id: str, max_attempts: int = 60, delay: int = 5
-) -> bool:
+def poll_snapshot_status(snapshot_id, max_attempts= 60, delay= 5):
     api_key = os.getenv("BRIGHTDATA_API_KEY")
     progress_url = f"https://api.brightdata.com/datasets/v3/progress/{snapshot_id}"
     headers = {"Authorization": f"Bearer {api_key}"}
 
     for attempt in range(max_attempts):
         try:
-            print(
-                f"⏳ Checking snapshot progress... (attempt {attempt + 1}/{max_attempts})"
-            )
+            print(f"⏳ Checking snapshot progress... (attempt {attempt + 1}/{max_attempts})")
 
             response = requests.get(progress_url, headers=headers)
             response.raise_for_status()
@@ -47,13 +42,9 @@ def poll_snapshot_status(
     return False
 
 
-def download_snapshot(
-    snapshot_id: str, format: str = "json"
-) -> Optional[List[Dict[Any, Any]]]:
+def download_snapshot(snapshot_id, format= "json"):
     api_key = os.getenv("BRIGHTDATA_API_KEY")
-    download_url = (
-        f"https://api.brightdata.com/datasets/v3/snapshot/{snapshot_id}?format={format}"
-    )
+    download_url = (f"https://api.brightdata.com/datasets/v3/snapshot/{snapshot_id}?format={format}")
     headers = {"Authorization": f"Bearer {api_key}"}
 
     try:
@@ -63,9 +54,7 @@ def download_snapshot(
         response.raise_for_status()
 
         data = response.json()
-        print(
-            f"🎉 Successfully downloaded {len(data) if isinstance(data, list) else 1} items"
-        )
+        print(f"🎉 Successfully downloaded {len(data) if isinstance(data, list) else 1} items")
 
         return data
 

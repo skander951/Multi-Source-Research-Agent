@@ -1,8 +1,10 @@
 from dotenv import load_dotenv
+import os
 from typing import Annotated, List
 from langgraph.graph import StateGraph, START, END
 from langgraph.graph.message import add_messages
 from langchain.chat_models import init_chat_model
+from groq import Client
 from typing_extensions import TypedDict
 from pydantic import BaseModel, Field
 from web_operations import serp_search, reddit_search_api, reddit_post_retrieval
@@ -16,7 +18,16 @@ from prompts import (
 
 load_dotenv()
 
-llm = init_chat_model("gpt-4o")
+# Initialize Groq LLM
+groq_client = Client(api_key=os.getenv("GROQ_API_KEY"))
+
+def invoke_groq(messages):
+    reply = groq_client.chat.completions.create(
+    model="mixtral",
+    messages=messages
+)
+    return reply
+
 
 
 class State(TypedDict):
@@ -72,19 +83,23 @@ def analyze_reddit_posts(state: State):
     if not reddit_results:
         return {"selected_reddit_urls": []}
 
-    structured_llm = llm.with_structured_output(RedditURLAnalysis)
     messages = get_reddit_url_analysis_messages(user_question, reddit_results)
 
     try:
-        analysis = structured_llm.invoke(messages)
-        selected_urls = analysis.selected_urls
+        # Groq invocation
+        reply = invoke_groq(messages)
+
+        llm_output = reply.content
+
+        import re
+        selected_urls = re.findall(r'https?://\S+', llm_output)
 
         print("Selected URLs:")
         for i, url in enumerate(selected_urls, 1):
             print(f"   {i}. {url}")
 
     except Exception as e:
-        print(e)
+        print("Error in Groq LLM:", e)
         selected_urls = []
 
     return {"selected_reddit_urls": selected_urls}
@@ -119,21 +134,22 @@ def analyze_google_results(state: State):
     google_results = state.get("google_results", "")
 
     messages = get_google_analysis_messages(user_question, google_results)
-    reply = llm.invoke(messages)
+    reply = invoke_groq(messages)
 
     return {"google_analysis": reply.content}
 
 
 def analyze_bing_results(state: State):
-    print("Analyzing bing search results")
+    print("Analyzing Bing search results")
 
     user_question = state.get("user_question", "")
     bing_results = state.get("bing_results", "")
 
     messages = get_bing_analysis_messages(user_question, bing_results)
-    reply = llm.invoke(messages)
+    reply = invoke_groq(messages) 
 
     return {"bing_analysis": reply.content}
+
 
 
 def analyze_reddit_results(state: State):
@@ -144,7 +160,7 @@ def analyze_reddit_results(state: State):
     reddit_post_data = state.get("reddit_post_data", "")
 
     messages = get_reddit_analysis_messages(user_question, reddit_results, reddit_post_data)
-    reply = llm.invoke(messages)
+    reply = invoke_groq(messages)  
 
     return {"reddit_analysis": reply.content}
 
@@ -157,11 +173,8 @@ def synthesize_analyses(state: State):
     bing_analysis = state.get("bing_analysis", "")
     reddit_analysis = state.get("reddit_analysis", "")
 
-    messages = get_synthesis_messages(
-        user_question, google_analysis, bing_analysis, reddit_analysis
-    )
-
-    reply = llm.invoke(messages)
+    messages = get_synthesis_messages(user_question, google_analysis, bing_analysis, reddit_analysis)
+    reply = invoke_groq(messages) 
     final_answer = reply.content
 
     return {"final_answer": final_answer, "messages": [{"role": "assistant", "content": final_answer}]}
